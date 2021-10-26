@@ -136,16 +136,26 @@ class BlackjackCountDoubleEnv(gym.Env):
                 card = self.draw_card()
                 self.dealer.append(card)
                 self.count_card(card)
+            reward = cmp(score(self.player), score(self.dealer))
+            if self.sab and is_natural(self.player) and not is_natural(self.dealer):
+                # Player automatically wins. Rules consistent with S&B
+                reward = 1.0
+            elif (
+                not self.sab
+                and self.natural
+                and is_natural(self.player)
+                and reward == 1.0
+            ):
+                # Natural gives extra points, but doesn't autowin. Legacy implementation
+                reward = 1.5
+            reward *= 2
 
-            reward = cmp(score(self.player), score(self.dealer)) * 2
         return self._get_obs(), reward, done, {}
 
     def _get_obs(self):
         return (sum_hand(self.player), self.dealer[0], usable_ace(self.player), self.count)
 
     def reset(self):
-        self.dealer = draw_hand(self.np_random)
-        self.player = draw_hand(self.np_random)
 
         if len(self.deck) < 15:
             self.shuffle_deck()
@@ -214,7 +224,19 @@ class BlackjackDoubleEnv(gym.Env):
             done = True
             while sum_hand(self.dealer) < 17:
                 self.dealer.append(draw_card(self.np_random))
-            reward = cmp(score(self.player), score(self.dealer)) * 2                 
+            reward = cmp(score(self.player), score(self.dealer))
+            if self.sab and is_natural(self.player) and not is_natural(self.dealer):
+                # Player automatically wins. Rules consistent with S&B
+                reward = 1.0
+            elif (
+                not self.sab
+                and self.natural
+                and is_natural(self.player)
+                and reward == 1.0
+            ):
+                # Natural gives extra points, but doesn't autowin. Legacy implementation
+                reward = 1.5
+            reward *= 2
         return self._get_obs(), reward, done, {}
 
     def _get_obs(self):
